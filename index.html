@@ -1,97 +1,118 @@
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
-  <meta charset="UTF-8">
-  <title>QR Menü Sistemi</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Restoran Menüsü</title>
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #f9f9f9;
+      font-family: Arial, sans-serif;
       margin: 0;
-      padding: 1rem;
-    }
-
-    h1 {
+      padding-top: 10vh;
       text-align: center;
-      margin-bottom: 1rem;
+      background-color: #f9f9f9;
     }
 
-    .menu-container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-      justify-content: center;
-    }
-
-    .menu-item {
-      background-color: white;
-      border: 1px solid #ddd;
-      border-radius: 12px;
-      padding: 1rem;
-      width: 280px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    #top-panel {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 10vh;
+      background: #fff;
+      box-shadow: 0 0.5vh 1vh rgba(0, 0, 0, 0.1);
+      z-index: 1000;
       display: flex;
       flex-direction: column;
-      align-items: center;
+      justify-content: center;
+      padding: 1vh 5vw;
     }
 
+    .top-row h1 {
+      margin: 0;
+      font-size: 2.5vw;
+    }
+
+    #category-container,
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(40vw, 1fr));
+      gap: 4vw;
+      margin: 4vw;
+    }
+
+    .category-button,
+    .menu-item {
+      background: white;
+      color: #333;
+      border: 1px solid #ddd;
+      border-radius: 2vw;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .category-button img,
     .menu-item img {
       width: 100%;
-      height: 150px;
+      height: 180px;
       object-fit: cover;
-      border-radius: 8px;
+      border-top-left-radius: 2vw;
+      border-top-right-radius: 2vw;
     }
 
-    .menu-item h3 {
-      margin: 0.5rem 0 0.2rem;
+    .label {
+      padding: 1vh;
+      font-size: 1.2rem;
+      font-weight: bold;
     }
 
-    .menu-item .price {
-      color: #666;
-      margin-bottom: 0.5rem;
+    .price {
+      color: #4caf50;
+      margin-bottom: 1vh;
     }
 
-    .quantity-input {
-      width: 60px;
-      padding: 0.3rem;
+    .quantity {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1vh;
+    }
+
+    .quantity input {
+      width: 50px;
       text-align: center;
-      margin-bottom: 0.5rem;
+      margin: 0 5px;
     }
 
     .add-button {
-      background-color: #4CAF50;
+      background-color: #4caf50;
       color: white;
       border: none;
       padding: 0.6rem 1.2rem;
       border-radius: 8px;
+      margin-bottom: 1vh;
       cursor: pointer;
     }
 
     .add-button:hover {
-      background-color: #45a049;
-    }
-
-    #submit-order {
-      margin: 2rem auto;
-      display: block;
-      padding: 0.8rem 2rem;
-      background-color: #007BFF;
-      color: white;
-      border: none;
-      border-radius: 10px;
-      font-size: 1rem;
-      cursor: pointer;
-    }
-
-    #submit-order:hover {
-      background-color: #0069d9;
+      background-color: #449d48;
     }
   </style>
 </head>
+
 <body>
-  <h1>QR Menü</h1>
-  <div class="menu-container" id="menu-container"></div>
-  <button id="submit-order" style="display:none;">Siparişi Gönder</button>
+  <div id="top-panel">
+    <div class="top-row">
+      <h1>Restoran Menüsü</h1>
+    </div>
+  </div>
+
+  <div id="category-container"></div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
@@ -108,86 +129,76 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const database = getDatabase(app);
-
+    const db = getDatabase(app);
     const tableNumber = new URLSearchParams(window.location.search).get('table');
-    const menuContainer = document.getElementById("menu-container");
-    const submitOrderButton = document.getElementById("submit-order");
+    const categoryContainer = document.getElementById("category-container");
     const cart = [];
 
-    const menuRef = ref(database, 'menu');
-    onValue(menuRef, (snapshot) => {
-      snapshot.forEach((categorySnap) => {
-        const category = categorySnap.val();
-        for (const [key, item] of Object.entries(category)) {
-          if (key === "background") continue;
-          createMenuItem(item);
-        }
-      });
-    });
+    function renderCategory(categoryName, items, background) {
+      const categoryDiv = document.createElement("div");
 
-    function createMenuItem(item) {
-      const div = document.createElement("div");
-      div.className = "menu-item";
+      const header = document.createElement("h2");
+      header.textContent = categoryName;
+      categoryDiv.appendChild(header);
 
-      const img = document.createElement("img");
-      img.src = item.background || "https://via.placeholder.com/300x200";
-      div.appendChild(img);
+      const menuGrid = document.createElement("div");
+      menuGrid.className = "menu-grid";
 
-      const name = document.createElement("h3");
-      name.textContent = item.name;
-      div.appendChild(name);
+      for (const [key, item] of Object.entries(items)) {
+        if (key === "background") continue;
 
-      const price = document.createElement("div");
-      price.className = "price";
-      price.textContent = `${item.price} TL`;
-      div.appendChild(price);
+        const card = document.createElement("div");
+        card.className = "menu-item";
 
-      const quantityInput = document.createElement("input");
-      quantityInput.className = "quantity-input";
-      quantityInput.type = "number";
-      quantityInput.min = 1;
-      quantityInput.value = 1;
-      div.appendChild(quantityInput);
+        const img = document.createElement("img");
+        img.src = item.background || "https://via.placeholder.com/300x200";
+        card.appendChild(img);
 
-      const addButton = document.createElement("button");
-      addButton.className = "add-button";
-      addButton.textContent = "Sepete Ekle";
-      addButton.onclick = () => {
-        const quantity = parseInt(quantityInput.value);
-        if (quantity > 0) {
-          cart.push({ name: item.name, price: item.price, quantity });
-          alert(`${quantity} adet ${item.name} sepete eklendi.`);
-          submitOrderButton.style.display = "block";
-        }
-      };
-      div.appendChild(addButton);
+        const label = document.createElement("div");
+        label.className = "label";
+        label.textContent = item.name;
+        card.appendChild(label);
 
-      menuContainer.appendChild(div);
-    }
+        const price = document.createElement("div");
+        price.className = "price";
+        price.textContent = item.price + " TL";
+        card.appendChild(price);
 
-    submitOrderButton.addEventListener("click", () => {
-      if (!tableNumber) {
-        alert("Masa bilgisi yok!");
-        return;
+        const quantityDiv = document.createElement("div");
+        quantityDiv.className = "quantity";
+        const input = document.createElement("input");
+        input.type = "number";
+        input.min = 1;
+        input.value = 1;
+        quantityDiv.appendChild(input);
+        card.appendChild(quantityDiv);
+
+        const btn = document.createElement("button");
+        btn.className = "add-button";
+        btn.textContent = "Sepete Ekle";
+        btn.onclick = () => {
+          const quantity = parseInt(input.value);
+          if (quantity > 0) {
+            cart.push({ name: item.name, price: item.price, quantity });
+            alert(`${quantity} adet ${item.name} sepete eklendi.`);
+          }
+        };
+        card.appendChild(btn);
+
+        menuGrid.appendChild(card);
       }
 
-      const orderRef = ref(database, `orders/${tableNumber}`);
-      const orderData = {
-        timestamp: new Date().toISOString(),
-        items: cart
-      };
+      categoryDiv.appendChild(menuGrid);
+      categoryContainer.appendChild(categoryDiv);
+    }
 
-      set(orderRef, orderData)
-        .then(() => {
-          alert("Sipariş başarıyla gönderildi.");
-          cart.length = 0;
-          submitOrderButton.style.display = "none";
-        })
-        .catch((err) => {
-          alert("Sipariş gönderilemedi.");
-          console.error(err);
-        });
+    const menuRef = ref(db, 'menu');
+    onValue(menuRef, (snapshot) => {
+      snapshot.forEach(categorySnap => {
+        const categoryName = categorySnap.key;
+        const categoryData = categorySnap.val();
+        renderCategory(categoryName, categoryData, categoryData.background);
+      });
     });
   </script>
 </body>
