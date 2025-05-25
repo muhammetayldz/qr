@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>QR Menü Sistemi</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 1rem;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    .menu-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: center;
+    }
+
+    .menu-item {
+      background-color: white;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      padding: 1rem;
+      width: 280px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .menu-item img {
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+
+    .menu-item h3 {
+      margin: 0.5rem 0 0.2rem;
+    }
+
+    .menu-item .price {
+      color: #666;
+      margin-bottom: 0.5rem;
+    }
+
+    .quantity-input {
+      width: 60px;
+      padding: 0.3rem;
+      text-align: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .add-button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .add-button:hover {
+      background-color: #45a049;
+    }
+
+    #submit-order {
+      margin: 2rem auto;
+      display: block;
+      padding: 0.8rem 2rem;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    #submit-order:hover {
+      background-color: #0069d9;
+    }
+  </style>
+</head>
+<body>
+  <h1>QR Menü</h1>
+  <div class="menu-container" id="menu-container"></div>
+  <button id="submit-order" style="display:none;">Siparişi Gönder</button>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+    import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "qr-menu-23.firebaseapp.com",
+      databaseURL: "https://qr-menu-23-default-rtdb.firebaseio.com",
+      projectId: "qr-menu-23",
+      storageBucket: "qr-menu-23.appspot.com",
+      messagingSenderId: "109188083749952270163",
+      appId: "YOUR_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+    const tableNumber = new URLSearchParams(window.location.search).get('table');
+    const menuContainer = document.getElementById("menu-container");
+    const submitOrderButton = document.getElementById("submit-order");
+    const cart = [];
+
+    const menuRef = ref(database, 'menu');
+    onValue(menuRef, (snapshot) => {
+      snapshot.forEach((categorySnap) => {
+        const category = categorySnap.val();
+        for (const [key, item] of Object.entries(category)) {
+          if (key === "background") continue;
+          createMenuItem(item);
+        }
+      });
+    });
+
+    function createMenuItem(item) {
+      const div = document.createElement("div");
+      div.className = "menu-item";
+
+      const img = document.createElement("img");
+      img.src = item.background || "https://via.placeholder.com/300x200";
+      div.appendChild(img);
+
+      const name = document.createElement("h3");
+      name.textContent = item.name;
+      div.appendChild(name);
+
+      const price = document.createElement("div");
+      price.className = "price";
+      price.textContent = `${item.price} TL`;
+      div.appendChild(price);
+
+      const quantityInput = document.createElement("input");
+      quantityInput.className = "quantity-input";
+      quantityInput.type = "number";
+      quantityInput.min = 1;
+      quantityInput.value = 1;
+      div.appendChild(quantityInput);
+
+      const addButton = document.createElement("button");
+      addButton.className = "add-button";
+      addButton.textContent = "Sepete Ekle";
+      addButton.onclick = () => {
+        const quantity = parseInt(quantityInput.value);
+        if (quantity > 0) {
+          cart.push({ name: item.name, price: item.price, quantity });
+          alert(`${quantity} adet ${item.name} sepete eklendi.`);
+          submitOrderButton.style.display = "block";
+        }
+      };
+      div.appendChild(addButton);
+
+      menuContainer.appendChild(div);
+    }
+
+    submitOrderButton.addEventListener("click", () => {
+      if (!tableNumber) {
+        alert("Masa bilgisi yok!");
+        return;
+      }
+
+      const orderRef = ref(database, `orders/${tableNumber}`);
+      const orderData = {
+        timestamp: new Date().toISOString(),
+        items: cart
+      };
+
+      set(orderRef, orderData)
+        .then(() => {
+          alert("Sipariş başarıyla gönderildi.");
+          cart.length = 0;
+          submitOrderButton.style.display = "none";
+        })
+        .catch((err) => {
+          alert("Sipariş gönderilemedi.");
+          console.error(err);
+        });
+    });
+  </script>
+</body>
+</html>
