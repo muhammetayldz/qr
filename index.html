@@ -931,13 +931,42 @@
       box-shadow: 0 8px 32px rgba(33,150,243,0.18);
     }
     [data-theme="light"] .info-card {
-      background: #f4f8fb;
+      background: #c7d0e1;
       color: #1976D2;
+      box-shadow: 0 8px 32px rgba(33,50,99,0.44);
+      border-radius: 16px;
     }
     .info-card i {
       font-size: 1.5rem;
       color: #2196F3;
       flex-shrink: 0;
+    }
+
+    body, .main-panel, .info-card, .main-title, .header-info, .theme-toggle-btn, .table-number {
+      transition: background 0.35s cubic-bezier(.77,0,.18,1), color 0.35s cubic-bezier(.77,0,.18,1), box-shadow 0.35s cubic-bezier(.77,0,.18,1);
+    }
+
+    [data-theme="light"] .main-panel {
+      background: #d0d8e8;
+      box-shadow: 0 8px 32px rgba(33,50,99,0.44);
+      border-radius: 20px;
+    }
+    [data-theme="light"] .info-card {
+      background: #c7d0e1;
+      color: #1976D2;
+      box-shadow: 0 8px 32px rgba(33,50,99,0.44);
+      border-radius: 16px;
+    }
+
+    [data-theme="light"] .category {
+      background: #d0d8e8;
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(33,50,99,0.44);
+    }
+    [data-theme="dark"] .category {
+      background: #23272e;
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(33,50,99,0.44);
     }
   </style>
 </head>
