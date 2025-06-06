@@ -898,9 +898,16 @@
       margin: 2rem auto 0 auto;
       max-width: 600px;
     }
-    @media (max-width: 600px) {
+    @media (max-width: 480px) {
       .info-quad-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.7rem;
+        max-width: 98vw;
+      }
+      .info-card {
+        font-size: 1rem;
+        padding: 0.8rem 0.5rem;
+        min-height: 60px;
       }
     }
     .info-card {
